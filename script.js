@@ -2,6 +2,8 @@ const carCountInput = document.querySelector("#car-count");
 const lightActionButtons = document.querySelectorAll("[data-light-action]");
 const moveButtons = document.querySelectorAll("[data-move]");
 const currentLightToggleButton = document.querySelector("[data-current-light-toggle]");
+const algorithmOneButton = document.querySelector("[data-algorithm='one']");
+const algorithmIndicator = document.querySelector("#algorithm-indicator");
 const train = document.querySelector("#train");
 const summary = document.querySelector("#summary");
 
@@ -17,9 +19,18 @@ let visitedCars = [];
 let currentCarIndex = 0;
 let totalSteps = 0;
 let currentCarCount = null;
+let algorithmRunning = false;
+let algorithmStatus = "";
+let algorithmResult = null;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function sleep(delay) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, delay);
+  });
 }
 
 function createSvgElement(tagName, attributes = {}) {
@@ -135,6 +146,22 @@ function resetTraversal(count) {
   currentCarCount = count;
 }
 
+function getAnimationDelay(count) {
+  return count <= 30 ? 160 : (count <= 100 ? 1 : 0);
+}
+
+function setControlsDisabled(disabled) {
+  [
+    carCountInput,
+    currentLightToggleButton,
+    algorithmOneButton,
+    ...lightActionButtons,
+    ...moveButtons,
+  ].forEach((control) => {
+    control.disabled = disabled;
+  });
+}
+
 function setAllLights(isOn) {
   lightStates = lightStates.map(() => isOn);
   renderTrain();
@@ -154,6 +181,14 @@ function moveCurrentCar(step) {
   renderTrain();
 }
 
+function moveCurrentCarWithoutRender(step) {
+  const count = lightStates.length;
+
+  currentCarIndex = (currentCarIndex + step + count) % count;
+  visitedCars[currentCarIndex] = true;
+  totalSteps += 1;
+}
+
 function setCurrentLight(isOn) {
   lightStates[currentCarIndex] = isOn;
   renderTrain();
@@ -161,6 +196,76 @@ function setCurrentLight(isOn) {
 
 function toggleCurrentLight() {
   setCurrentLight(!lightStates[currentCarIndex]);
+}
+
+async function animateAlgorithmStep(delay) {
+  renderTrain();
+
+  if (delay > 0) {
+    await sleep(delay);
+  }
+}
+
+async function algorithmMove(step, delay) {
+  moveCurrentCarWithoutRender(step);
+
+  if (delay > 0) {
+    await animateAlgorithmStep(delay);
+  }
+}
+
+async function runAlgorithmOne() {
+  if (algorithmRunning) {
+    return;
+  }
+
+  algorithmRunning = true;
+  algorithmStatus = "Simple Algorithm: running";
+  algorithmResult = null;
+  setControlsDisabled(true);
+  algorithmIndicator.hidden = false;
+
+  const count = clamp(Number(carCountInput.value) || MIN_CARS, MIN_CARS, MAX_CARS);
+  const delay = getAnimationDelay(count);
+
+  carCountInput.value = count;
+  syncLightStates(count);
+  resetTraversal(count);
+  const firstCarIndex = currentCarIndex;
+  await animateAlgorithmStep(delay);
+  await sleep(40);
+
+  while (algorithmRunning) {
+    let countedCars = 0;
+
+    lightStates[firstCarIndex] = true;
+    await animateAlgorithmStep(delay);
+
+    do {
+      await algorithmMove(1, delay);
+      countedCars += 1;
+    } while (!lightStates[currentCarIndex]);
+
+    lightStates[currentCarIndex] = false;
+    await animateAlgorithmStep(delay);
+
+    for (let step = 0; step < countedCars; step += 1) {
+      await algorithmMove(-1, delay);
+    }
+
+    await animateAlgorithmStep(delay);
+
+    if (!lightStates[firstCarIndex]) {
+      algorithmResult = countedCars;
+      algorithmStatus = "Simple Algorithm: complete";
+      break;
+    }
+  }
+
+  algorithmRunning = false;
+  setControlsDisabled(false);
+  algorithmIndicator.hidden = true;
+  renderTrain();
 }
 
 function renderTrain() {
@@ -185,6 +290,7 @@ function renderTrain() {
   }
   const lightsOn = lightStates.filter(Boolean).length;
   const visitedCount = visitedCars.filter(Boolean).length;
+  const algorithmResultLine = algorithmResult === null ? "" : `<br>Simple Algorithm answer: ${algorithmResult}`;
   train.replaceChildren();
 
   for (let index = 0; index < count; index += 1) {
@@ -232,12 +338,20 @@ function renderTrain() {
   train.append(svg);
   currentLightToggleButton.classList.toggle("is-on", lightStates[currentCarIndex]);
   currentLightToggleButton.setAttribute("aria-pressed", String(lightStates[currentCarIndex]));
-  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on<br>Current car: ${currentCarIndex + 1} (${lightStates[currentCarIndex] ? "on" : "off"})<br>Visited: ${visitedCount}/${count}<br>Steps: ${totalSteps}`;
+  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on<br>Current car: ${currentCarIndex + 1} (${lightStates[currentCarIndex] ? "on" : "off"})<br>Visited: ${visitedCount}/${count}<br>Steps: ${totalSteps}${algorithmStatus ? `<br>${algorithmStatus}` : ""}${algorithmResultLine}`;
 }
 
-carCountInput.addEventListener("input", renderTrain);
+carCountInput.addEventListener("input", () => {
+  algorithmStatus = "";
+  algorithmResult = null;
+  renderTrain();
+});
 lightActionButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    if (algorithmRunning) {
+      return;
+    }
+
     const action = button.dataset.lightAction;
 
     if (action === "on") {
@@ -255,13 +369,28 @@ lightActionButtons.forEach((button) => {
 });
 moveButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    if (algorithmRunning) {
+      return;
+    }
+
     moveCurrentCar(Number(button.dataset.move));
   });
 });
 currentLightToggleButton.addEventListener("click", () => {
+  if (algorithmRunning) {
+    return;
+  }
+
   toggleCurrentLight();
 });
+algorithmOneButton.addEventListener("click", () => {
+  runAlgorithmOne();
+});
 train.addEventListener("click", (event) => {
+  if (algorithmRunning) {
+    return;
+  }
+
   const car = event.target.closest(".car-segment");
 
   if (!car) {
@@ -274,7 +403,7 @@ train.addEventListener("click", (event) => {
   renderTrain();
 });
 document.addEventListener("keydown", (event) => {
-  if (["BUTTON", "INPUT"].includes(event.target.tagName)) {
+  if (algorithmRunning || ["BUTTON", "INPUT"].includes(event.target.tagName)) {
     return;
   }
 

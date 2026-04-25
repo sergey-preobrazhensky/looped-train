@@ -81,6 +81,7 @@ h1 {
 
 .count-control,
 .light-actions,
+.algorithm-actions,
 .movement-actions,
 .current-car-actions {
   display: flex;
@@ -112,6 +113,7 @@ h1 {
 }
 
 .light-actions button,
+.algorithm-actions button,
 .movement-actions button,
 .current-car-actions button {
   padding: 12px 16px;
@@ -129,6 +131,7 @@ h1 {
 }
 
 .light-actions button:hover,
+.algorithm-actions button:hover,
 .movement-actions button:hover,
 .current-car-actions button:hover {
   border-color: rgba(98, 210, 255, 0.48);
@@ -136,17 +139,55 @@ h1 {
 }
 
 .light-actions button:active,
+.algorithm-actions button:active,
 .movement-actions button:active,
 .current-car-actions button:active {
   transform: translateY(1px);
 }
 
 .light-actions button:focus-visible,
+.algorithm-actions button:focus-visible,
 .movement-actions button:focus-visible,
 .current-car-actions button:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(98, 210, 255, 0.16);
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.algorithm-actions button {
+  border-color: rgba(98, 210, 255, 0.28);
+}
+
+.algorithm-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.algorithm-indicator[hidden] {
+  display: none;
+}
+
+.loader {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(98, 210, 255, 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .scene {
@@ -352,6 +393,7 @@ h1 {
 
   .count-control,
   .light-actions,
+  .algorithm-actions,
   .movement-actions,
   .current-car-actions {
     flex-wrap: wrap;
