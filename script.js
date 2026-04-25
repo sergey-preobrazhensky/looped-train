@@ -13,7 +13,10 @@ const CENTER = VIEWBOX_SIZE / 2;
 const RADIUS = 390;
 
 let lightStates = [];
+let visitedCars = [];
 let currentCarIndex = 0;
+let totalSteps = 0;
+let currentCarCount = null;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -38,12 +41,12 @@ function getPointOnCircle(angle, radius = RADIUS) {
   };
 }
 
-function getArcPath(startAngle, endAngle) {
-  const start = getPointOnCircle(startAngle);
-  const end = getPointOnCircle(endAngle);
+function getArcPath(startAngle, endAngle, radius = RADIUS) {
+  const start = getPointOnCircle(startAngle, radius);
+  const end = getPointOnCircle(endAngle, radius);
   const largeArc = endAngle - startAngle > 180 ? 1 : 0;
 
-  return `M ${start.x} ${start.y} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
 }
 
 function getCarWidth(count) {
@@ -55,22 +58,27 @@ function getGapAngle(count) {
     return 0;
   }
 
-  return Math.min(2.6, 24 / count);
+  return Math.min(3, 18 / count);
 }
 
-function createJoint(angle, carWidth) {
-  const halfWidth = carWidth / 2;
-  const inner = getPointOnCircle(angle, RADIUS - halfWidth);
-  const outer = getPointOnCircle(angle, RADIUS + halfWidth);
-  const jointWidth = clamp(carWidth * 0.18, 1.5, 12);
+function createVisitedMarker(startAngle, endAngle, carWidth, count) {
+  const markerRadius = RADIUS - carWidth / 2 - 9;
+  const markerWidth = clamp(carWidth * 0.14, 2, 8);
 
-  return createSvgElement("line", {
-    class: "car-joint",
-    x1: inner.x,
-    y1: inner.y,
-    x2: outer.x,
-    y2: outer.y,
-    "stroke-width": jointWidth,
+  if (count === 1) {
+    return createSvgElement("circle", {
+      class: "visited-marker",
+      cx: CENTER,
+      cy: CENTER,
+      r: markerRadius,
+      "stroke-width": markerWidth,
+    });
+  }
+
+  return createSvgElement("path", {
+    class: "visited-marker",
+    d: getArcPath(startAngle, endAngle, markerRadius),
+    "stroke-width": markerWidth,
   });
 }
 
@@ -111,12 +119,20 @@ function syncLightStates(count) {
   }
 
   while (lightStates.length < count) {
-    lightStates.push(true);
+    lightStates.push(Math.random() >= 0.5);
   }
 }
 
 function syncCurrentCar(count) {
   currentCarIndex = clamp(currentCarIndex, 0, count - 1);
+}
+
+function resetTraversal(count) {
+  syncCurrentCar(count);
+  visitedCars = Array(count).fill(false);
+  visitedCars[currentCarIndex] = true;
+  totalSteps = 0;
+  currentCarCount = count;
 }
 
 function setAllLights(isOn) {
@@ -133,6 +149,8 @@ function moveCurrentCar(step) {
   const count = lightStates.length;
 
   currentCarIndex = (currentCarIndex + step + count) % count;
+  visitedCars[currentCarIndex] = true;
+  totalSteps += 1;
   renderTrain();
 }
 
@@ -160,14 +178,18 @@ function renderTrain() {
 
   carCountInput.value = count;
   syncLightStates(count);
-  syncCurrentCar(count);
+  if (currentCarCount !== count) {
+    resetTraversal(count);
+  } else {
+    syncCurrentCar(count);
+  }
   const lightsOn = lightStates.filter(Boolean).length;
+  const visitedCount = visitedCars.filter(Boolean).length;
   train.replaceChildren();
 
   for (let index = 0; index < count; index += 1) {
     const startAngle = -90 + segmentAngle * index + gapAngle / 2;
     const endAngle = -90 + segmentAngle * (index + 1) - gapAngle / 2;
-    const jointAngle = -90 + segmentAngle * index;
     const car = count === 1
       ? createSvgElement("circle", {
         class: `car-segment car-segment--full${lightStates[index] ? "" : " car-segment--off"}`,
@@ -183,8 +205,12 @@ function renderTrain() {
     car.style.setProperty("--car-width", carWidth);
     car.setAttribute("stroke-width", carWidth);
     car.setAttribute("aria-label", `Car ${index + 1}`);
+    car.dataset.carIndex = index;
     svg.append(car);
-    svg.append(createJoint(jointAngle, carWidth));
+
+    if (visitedCars[index]) {
+      svg.append(createVisitedMarker(startAngle, endAngle, carWidth, count));
+    }
 
     if (showLabels) {
       const labelAngle = -90 + segmentAngle * (index + 0.5);
@@ -206,7 +232,7 @@ function renderTrain() {
   train.append(svg);
   currentLightToggleButton.classList.toggle("is-on", lightStates[currentCarIndex]);
   currentLightToggleButton.setAttribute("aria-pressed", String(lightStates[currentCarIndex]));
-  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on<br>Current car: ${currentCarIndex + 1} (${lightStates[currentCarIndex] ? "on" : "off"})`;
+  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on<br>Current car: ${currentCarIndex + 1} (${lightStates[currentCarIndex] ? "on" : "off"})<br>Visited: ${visitedCount}/${count}<br>Steps: ${totalSteps}`;
 }
 
 carCountInput.addEventListener("input", renderTrain);
@@ -234,6 +260,38 @@ moveButtons.forEach((button) => {
 });
 currentLightToggleButton.addEventListener("click", () => {
   toggleCurrentLight();
+});
+train.addEventListener("click", (event) => {
+  const car = event.target.closest(".car-segment");
+
+  if (!car) {
+    return;
+  }
+
+  const carIndex = Number(car.dataset.carIndex);
+
+  lightStates[carIndex] = !lightStates[carIndex];
+  renderTrain();
+});
+document.addEventListener("keydown", (event) => {
+  if (["BUTTON", "INPUT"].includes(event.target.tagName)) {
+    return;
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveCurrentCar(-1);
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    moveCurrentCar(1);
+  }
+
+  if (event.key === " ") {
+    event.preventDefault();
+    toggleCurrentLight();
+  }
 });
 window.addEventListener("resize", renderTrain);
 
