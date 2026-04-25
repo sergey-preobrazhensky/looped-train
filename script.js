@@ -3,6 +3,7 @@ const lightActionButtons = document.querySelectorAll("[data-light-action]");
 const moveButtons = document.querySelectorAll("[data-move]");
 const currentLightToggleButton = document.querySelector("[data-current-light-toggle]");
 const algorithmOneButton = document.querySelector("[data-algorithm='one']");
+const algorithmTwoButton = document.querySelector("[data-algorithm='two']");
 const algorithmIndicator = document.querySelector("#algorithm-indicator");
 const train = document.querySelector("#train");
 const summary = document.querySelector("#summary");
@@ -22,6 +23,7 @@ let currentCarCount = null;
 let algorithmRunning = false;
 let algorithmStatus = "";
 let algorithmResult = null;
+let algorithmResultLabel = "Simple Algorithm answer";
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -155,6 +157,7 @@ function setControlsDisabled(disabled) {
     carCountInput,
     currentLightToggleButton,
     algorithmOneButton,
+    algorithmTwoButton,
     ...lightActionButtons,
     ...moveButtons,
   ].forEach((control) => {
@@ -222,6 +225,7 @@ async function runAlgorithmOne() {
   algorithmRunning = true;
   algorithmStatus = "Simple Algorithm: running";
   algorithmResult = null;
+  algorithmResultLabel = "Simple Algorithm answer";
   setControlsDisabled(true);
   algorithmIndicator.hidden = false;
 
@@ -268,6 +272,97 @@ async function runAlgorithmOne() {
   renderTrain();
 }
 
+async function moveUntilLightState(step, isOn, delay) {
+  let distance = 0;
+
+  do {
+    await algorithmMove(step, delay);
+    distance += 1;
+  } while (lightStates[currentCarIndex] !== isOn);
+
+  return distance;
+}
+
+async function moveToCar(targetIndex, step, delay) {
+  while (currentCarIndex !== targetIndex) {
+    await algorithmMove(step, delay);
+  }
+}
+
+async function runAlgorithmTwo() {
+  if (algorithmRunning) {
+    return;
+  }
+
+  algorithmRunning = true;
+  algorithmStatus = "Bidirectional Algorithm: running";
+  algorithmResult = null;
+  algorithmResultLabel = "Bidirectional Algorithm answer";
+  setControlsDisabled(true);
+  algorithmIndicator.hidden = false;
+
+  const count = clamp(Number(carCountInput.value) || MIN_CARS, MIN_CARS, MAX_CARS);
+  const delay = getAnimationDelay(count);
+
+  carCountInput.value = count;
+  syncLightStates(count);
+  resetTraversal(count);
+  const firstCarIndex = currentCarIndex;
+  await animateAlgorithmStep(delay);
+  await sleep(40);
+
+  lightStates[firstCarIndex] = true;
+  await animateAlgorithmStep(delay);
+
+  let rightDistance = await moveUntilLightState(1, true, delay);
+  let rightBoundary = currentCarIndex;
+
+  lightStates[rightBoundary] = false;
+  await animateAlgorithmStep(delay);
+  await moveToCar(firstCarIndex, -1, delay);
+  await animateAlgorithmStep(delay);
+
+  if (!lightStates[firstCarIndex]) {
+    algorithmResult = rightDistance;
+    algorithmStatus = "Bidirectional Algorithm: complete";
+  } else {
+    let leftDistance = 0;
+
+    while (algorithmRunning) {
+      leftDistance += await moveUntilLightState(-1, false, delay);
+      const leftBoundary = currentCarIndex;
+
+      lightStates[leftBoundary] = true;
+      await animateAlgorithmStep(delay);
+      await moveToCar(rightBoundary, 1, delay);
+
+      if (lightStates[rightBoundary]) {
+        algorithmResult = leftDistance + rightDistance;
+        algorithmStatus = "Bidirectional Algorithm: complete";
+        break;
+      }
+
+      rightDistance += await moveUntilLightState(1, true, delay);
+      rightBoundary = currentCarIndex;
+
+      lightStates[rightBoundary] = false;
+      await animateAlgorithmStep(delay);
+      await moveToCar(leftBoundary, -1, delay);
+
+      if (!lightStates[leftBoundary]) {
+        algorithmResult = leftDistance + rightDistance;
+        algorithmStatus = "Bidirectional Algorithm: complete";
+        break;
+      }
+    }
+  }
+
+  algorithmRunning = false;
+  setControlsDisabled(false);
+  algorithmIndicator.hidden = true;
+  renderTrain();
+}
+
 function renderTrain() {
   const count = clamp(Number(carCountInput.value) || MIN_CARS, MIN_CARS, MAX_CARS);
   const segmentAngle = 360 / count;
@@ -290,7 +385,7 @@ function renderTrain() {
   }
   const lightsOn = lightStates.filter(Boolean).length;
   const visitedCount = visitedCars.filter(Boolean).length;
-  const algorithmResultLine = algorithmResult === null ? "" : `<br>Simple Algorithm answer: ${algorithmResult}`;
+  const algorithmResultLine = algorithmResult === null ? "" : `<br>${algorithmResultLabel}: ${algorithmResult}`;
   train.replaceChildren();
 
   for (let index = 0; index < count; index += 1) {
@@ -385,6 +480,9 @@ currentLightToggleButton.addEventListener("click", () => {
 });
 algorithmOneButton.addEventListener("click", () => {
   runAlgorithmOne();
+});
+algorithmTwoButton.addEventListener("click", () => {
+  runAlgorithmTwo();
 });
 train.addEventListener("click", (event) => {
   if (algorithmRunning) {
