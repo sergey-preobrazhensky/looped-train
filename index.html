@@ -1,9 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Hello world</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looped Train</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Hello world</h1>
+  <main class="page">
+    <section class="intro">
+      <p class="eyebrow">Task visualization</p>
+      <h1>Looped Train</h1>
+      <p class="description">
+        Enter the number of cars to see a train where the last car is connected to the first one.
+      </p>
+    </section>
+
+    <section class="controls" aria-label="Visualization settings">
+      <div class="count-control">
+        <label for="car-count">Number of cars</label>
+        <input id="car-count" type="number" min="1" max="1000" value="12" inputmode="numeric">
+      </div>
+
+      <div class="light-actions" aria-label="Light controls">
+        <button type="button" data-light-action="off">Turn all off</button>
+        <button type="button" data-light-action="on">Turn all on</button>
+        <button type="button" data-light-action="random">Random</button>
+      </div>
+    </section>
+
+    <section class="scene" aria-live="polite">
+      <div class="track" aria-hidden="true"></div>
+      <div id="train" class="train" aria-label="Looped train"></div>
+      <p id="summary" class="summary"></p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>

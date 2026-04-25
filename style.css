@@ -1,0 +1,276 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --background: #101724;
+  --panel: #172236;
+  --panel-light: #1f2e47;
+  --accent: #62d2ff;
+  --accent-strong: #2fa9e8;
+  --text: #f5f7fb;
+  --muted: #aeb9ca;
+  --track: #4f6178;
+  --car: #ffd166;
+  --car-dark: #d69a22;
+  --window: #ebf8ff;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(98, 210, 255, 0.18), transparent 34rem),
+    linear-gradient(135deg, #0d1320 0%, var(--background) 55%, #111827 100%);
+}
+
+.page {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.intro,
+.controls,
+.scene {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(23, 34, 54, 0.86);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.intro {
+  padding: 32px;
+  border-radius: 28px 28px 18px 18px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 7vw, 5rem);
+  line-height: 0.95;
+}
+
+.description {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 20px 24px;
+  border-radius: 18px;
+}
+
+.count-control,
+.light-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.count-control label {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.count-control input {
+  width: 130px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--panel-light);
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+}
+
+.count-control input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(98, 210, 255, 0.16);
+}
+
+.light-actions button {
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--panel-light);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.light-actions button:hover {
+  border-color: rgba(98, 210, 255, 0.48);
+  background: #263854;
+}
+
+.light-actions button:active {
+  transform: translateY(1px);
+}
+
+.light-actions button:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(98, 210, 255, 0.16);
+}
+
+.scene {
+  position: relative;
+  height: min(72vw, 720px);
+  overflow: hidden;
+  border-radius: 18px 18px 28px 28px;
+}
+
+.track,
+.train {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: auto;
+  height: calc(100% - 96px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.track {
+  border: 16px solid rgba(79, 97, 120, 0.34);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 0 0 2px rgba(255, 255, 255, 0.04);
+}
+
+.track::before,
+.track::after {
+  content: "";
+  position: absolute;
+  inset: 34px;
+  border: 2px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+}
+
+.track::after {
+  inset: -42px;
+}
+
+.train-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.car-segment {
+  fill: none;
+  stroke: var(--car);
+  stroke-linecap: butt;
+  filter: drop-shadow(0 0 5px rgba(255, 209, 102, 0.42));
+}
+
+.car-segment--off {
+  stroke: #334155;
+  filter: drop-shadow(0 0 3px rgba(15, 23, 42, 0.5));
+}
+
+.train-svg--dense .car-segment {
+  filter: none;
+}
+
+.car-joint {
+  stroke: #4b5568;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(15, 23, 42, 0.55));
+}
+
+.train-svg--dense .car-joint {
+  filter: none;
+}
+
+.car-segment--full {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.car-label {
+  fill: #2b2208;
+  font-size: 34px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.summary {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(260px, 48vw);
+  margin: 0;
+  padding: 20px;
+  border-radius: 24px;
+  color: var(--muted);
+  background: rgba(16, 23, 36, 0.78);
+  text-align: center;
+  line-height: 1.5;
+  transform: translate(-50%, -50%);
+}
+
+.summary strong {
+  display: block;
+  color: var(--text);
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .page {
+    width: min(100% - 20px, 1100px);
+    padding: 20px 0;
+  }
+
+  .intro {
+    padding: 24px;
+  }
+
+  .controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .count-control,
+  .light-actions {
+    flex-wrap: wrap;
+  }
+
+  .scene {
+    height: 92vw;
+  }
+
+  .track,
+  .train {
+    height: calc(100% - 60px);
+  }
+}
