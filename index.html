@@ -26,11 +26,13 @@
         <button type="button" data-light-action="off">Turn all off</button>
         <button type="button" data-light-action="on">Turn all on</button>
         <button type="button" data-light-action="random">Random</button>
+        <button type="button" data-reset-algorithm>Reset</button>
       </div>
 
       <div class="algorithm-actions" aria-label="Algorithm controls">
         <button type="button" data-algorithm="one">Simple Algorithm</button>
         <button type="button" data-algorithm="two">Bidirectional Algorithm</button>
+        <button type="button" data-algorithm="three">Forward Scan Algorithm</button>
         <span id="algorithm-indicator" class="algorithm-indicator" hidden>
           <span class="loader" aria-hidden="true"></span>
           Computing
@@ -39,6 +41,17 @@
     </section>
 
     <section class="scene" aria-live="polite">
+      <div class="scene-tools" aria-label="Algorithm runtime controls">
+        <div class="speed-control" aria-label="Speed control">
+          <label for="animation-delay">Speed</label>
+          <button class="speed-step" type="button" data-speed-step="-1" aria-label="Decrease speed">-</button>
+          <input id="animation-delay" type="range" min="0" max="22" value="14">
+          <button class="speed-step" type="button" data-speed-step="1" aria-label="Increase speed">+</button>
+        </div>
+        <button class="stop-button" type="button" data-stop-algorithm aria-label="Stop algorithm">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
       <div id="train" class="train" aria-label="Looped train"></div>
       <div class="center-panel current-car-actions" aria-label="Current car controls">
         <button class="icon-button" type="button" data-move="-1" aria-label="Previous car">

@@ -163,6 +163,53 @@ button:disabled {
   border-color: rgba(98, 210, 255, 0.28);
 }
 
+.scene-tools [data-stop-algorithm]:hover {
+  border-color: rgba(248, 113, 113, 0.7);
+  background: #3a2430;
+}
+
+.light-actions [data-reset-algorithm] {
+  border-color: rgba(251, 191, 36, 0.36);
+}
+
+.light-actions [data-reset-algorithm]:hover {
+  border-color: rgba(251, 191, 36, 0.7);
+  background: #3a3020;
+}
+
+.speed-control {
+  display: grid;
+  grid-template-columns: auto 22px minmax(86px, 120px) 22px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(31, 46, 71, 0.58);
+}
+
+.speed-control label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.speed-control input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.speed-step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .algorithm-indicator {
   display: inline-flex;
   align-items: center;
@@ -195,6 +242,48 @@ button:disabled {
   height: min(72vw, 720px);
   overflow: hidden;
   border-radius: 18px 18px 28px 28px;
+}
+
+.scene-tools {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  max-width: calc(100% - 28px);
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(16, 23, 36, 0.78);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.scene-tools [data-stop-algorithm] {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(248, 113, 113, 0.36);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--panel-light);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.stop-button span {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #f87171;
 }
 
 .train {

@@ -4,6 +4,11 @@ const moveButtons = document.querySelectorAll("[data-move]");
 const currentLightToggleButton = document.querySelector("[data-current-light-toggle]");
 const algorithmOneButton = document.querySelector("[data-algorithm='one']");
 const algorithmTwoButton = document.querySelector("[data-algorithm='two']");
+const algorithmThreeButton = document.querySelector("[data-algorithm='three']");
+const animationDelayInput = document.querySelector("#animation-delay");
+const speedStepButtons = document.querySelectorAll("[data-speed-step]");
+const stopAlgorithmButton = document.querySelector("[data-stop-algorithm]");
+const resetAlgorithmButton = document.querySelector("[data-reset-algorithm]");
 const algorithmIndicator = document.querySelector("#algorithm-indicator");
 const train = document.querySelector("#train");
 const summary = document.querySelector("#summary");
@@ -14,6 +19,12 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const VIEWBOX_SIZE = 1000;
 const CENTER = VIEWBOX_SIZE / 2;
 const RADIUS = 390;
+const LOW_ANIMATION_DELAYS = [0, 1, 50, 100];
+const ANIMATION_DELAYS = [
+  ...LOW_ANIMATION_DELAYS,
+  ...Array.from({ length: 19 }, (_, index) => (index + 2) * 100),
+];
+const MAX_ANIMATION_DELAY = 2000;
 
 let lightStates = [];
 let visitedCars = [];
@@ -24,6 +35,9 @@ let algorithmRunning = false;
 let algorithmStatus = "";
 let algorithmResult = null;
 let algorithmResultLabel = "Simple Algorithm answer";
+let animationDelay = 500;
+let algorithmStartSnapshot = null;
+let shouldRenderAlgorithmSteps = true;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -148,8 +162,90 @@ function resetTraversal(count) {
   currentCarCount = count;
 }
 
-function getAnimationDelay(count) {
-  return count <= 30 ? 160 : (count <= 100 ? 1 : 0);
+function getAnimationDelay() {
+  return animationDelay;
+}
+
+function updateSpeedIndicator() {
+  animationDelayInput.value = ANIMATION_DELAYS.length - 1 - ANIMATION_DELAYS.indexOf(animationDelay);
+}
+
+function setAnimationDelay(delay) {
+  animationDelay = clamp(delay, 0, MAX_ANIMATION_DELAY);
+  shouldRenderAlgorithmSteps = animationDelay > 0;
+  updateSpeedIndicator();
+}
+
+function changeSpeed(step) {
+  const currentSpeedIndex = Number(animationDelayInput.value);
+  const nextSpeedIndex = clamp(currentSpeedIndex + step, 0, ANIMATION_DELAYS.length - 1);
+  const delayIndex = ANIMATION_DELAYS.length - 1 - nextSpeedIndex;
+
+  setAnimationDelay(ANIMATION_DELAYS[delayIndex]);
+}
+
+function createStateSnapshot() {
+  return {
+    carCount: carCountInput.value,
+    lightStates: [...lightStates],
+  };
+}
+
+function setResetSnapshotFromCurrentLights() {
+  algorithmRunning = false;
+  currentCarIndex = 0;
+  visitedCars = Array(lightStates.length).fill(false);
+  totalSteps = 0;
+  currentCarCount = lightStates.length;
+  algorithmStatus = "";
+  algorithmResult = null;
+  algorithmResultLabel = "Simple Algorithm answer";
+  algorithmStartSnapshot = createStateSnapshot();
+  updateResetButton();
+}
+
+function updateResetButton() {
+  resetAlgorithmButton.disabled = !algorithmStartSnapshot;
+}
+
+function stopAlgorithm() {
+  if (!algorithmRunning) {
+    return;
+  }
+
+  algorithmRunning = false;
+  algorithmStatus = "Algorithm stopped";
+  algorithmIndicator.hidden = true;
+  setControlsDisabled(false);
+  renderTrain();
+}
+
+function resetToAlgorithmStart() {
+  if (!algorithmStartSnapshot) {
+    return;
+  }
+
+  algorithmRunning = false;
+  carCountInput.value = algorithmStartSnapshot.carCount;
+  lightStates = [...algorithmStartSnapshot.lightStates];
+  visitedCars = Array(lightStates.length).fill(false);
+  currentCarIndex = 0;
+  totalSteps = 0;
+  currentCarCount = lightStates.length;
+  algorithmStatus = "";
+  algorithmResult = null;
+  algorithmResultLabel = "Simple Algorithm answer";
+  algorithmIndicator.hidden = true;
+  setControlsDisabled(false);
+  renderTrain();
+}
+
+function prepareAlgorithmStart() {
+  if (algorithmStartSnapshot) {
+    resetToAlgorithmStart();
+  }
+
+  setResetSnapshotFromCurrentLights();
 }
 
 function setControlsDisabled(disabled) {
@@ -158,20 +254,26 @@ function setControlsDisabled(disabled) {
     currentLightToggleButton,
     algorithmOneButton,
     algorithmTwoButton,
+    algorithmThreeButton,
     ...lightActionButtons,
     ...moveButtons,
   ].forEach((control) => {
     control.disabled = disabled;
   });
+
+  stopAlgorithmButton.disabled = !disabled;
+  updateResetButton();
 }
 
 function setAllLights(isOn) {
   lightStates = lightStates.map(() => isOn);
+  setResetSnapshotFromCurrentLights();
   renderTrain();
 }
 
 function randomizeLights() {
   lightStates = lightStates.map(() => Math.random() >= 0.5);
+  setResetSnapshotFromCurrentLights();
   renderTrain();
 }
 
@@ -201,19 +303,30 @@ function toggleCurrentLight() {
   setCurrentLight(!lightStates[currentCarIndex]);
 }
 
-async function animateAlgorithmStep(delay) {
-  renderTrain();
+async function animateAlgorithmStep() {
+  const delay = getAnimationDelay();
 
-  if (delay > 0) {
-    await sleep(delay);
+  if (delay === 0 || !shouldRenderAlgorithmSteps) {
+    return;
   }
+
+  renderTrain();
+  await sleep(delay);
 }
 
-async function algorithmMove(step, delay) {
+async function algorithmMove(step) {
   moveCurrentCarWithoutRender(step);
 
-  if (delay > 0) {
-    await animateAlgorithmStep(delay);
+  await animateAlgorithmStep();
+}
+
+async function moveSteps(step, steps) {
+  for (let index = 0; index < steps; index += 1) {
+    if (!algorithmRunning) {
+      break;
+    }
+
+    await algorithmMove(step);
   }
 }
 
@@ -222,6 +335,7 @@ async function runAlgorithmOne() {
     return;
   }
 
+  prepareAlgorithmStart();
   algorithmRunning = true;
   algorithmStatus = "Simple Algorithm: running";
   algorithmResult = null;
@@ -230,36 +344,44 @@ async function runAlgorithmOne() {
   algorithmIndicator.hidden = false;
 
   const count = clamp(Number(carCountInput.value) || MIN_CARS, MIN_CARS, MAX_CARS);
-  const delay = getAnimationDelay(count);
+  shouldRenderAlgorithmSteps = getAnimationDelay() > 0;
 
   carCountInput.value = count;
   syncLightStates(count);
   resetTraversal(count);
-  const firstCarIndex = currentCarIndex;
-  await animateAlgorithmStep(delay);
+  renderTrain();
+  await animateAlgorithmStep();
   await sleep(40);
 
   while (algorithmRunning) {
     let countedCars = 0;
 
-    lightStates[firstCarIndex] = true;
-    await animateAlgorithmStep(delay);
+    lightStates[currentCarIndex] = true;
+    await animateAlgorithmStep();
 
-    do {
-      await algorithmMove(1, delay);
-      countedCars += 1;
-    } while (!lightStates[currentCarIndex]);
-
-    lightStates[currentCarIndex] = false;
-    await animateAlgorithmStep(delay);
-
-    for (let step = 0; step < countedCars; step += 1) {
-      await algorithmMove(-1, delay);
+    if (!algorithmRunning) {
+      break;
     }
 
-    await animateAlgorithmStep(delay);
+    do {
+      await algorithmMove(1);
+      countedCars += 1;
+    } while (algorithmRunning && !lightStates[currentCarIndex]);
 
-    if (!lightStates[firstCarIndex]) {
+    if (!algorithmRunning) {
+      break;
+    }
+
+    lightStates[currentCarIndex] = false;
+    await animateAlgorithmStep();
+
+    for (let step = 0; step < countedCars; step += 1) {
+      await algorithmMove(-1);
+    }
+
+    await animateAlgorithmStep();
+
+    if (!lightStates[currentCarIndex]) {
       algorithmResult = countedCars;
       algorithmStatus = "Simple Algorithm: complete";
       break;
@@ -272,21 +394,15 @@ async function runAlgorithmOne() {
   renderTrain();
 }
 
-async function moveUntilLightState(step, isOn, delay) {
+async function moveUntilLightState(step, isOn) {
   let distance = 0;
 
   do {
-    await algorithmMove(step, delay);
+    await algorithmMove(step);
     distance += 1;
-  } while (lightStates[currentCarIndex] !== isOn);
+  } while (algorithmRunning && lightStates[currentCarIndex] !== isOn);
 
   return distance;
-}
-
-async function moveToCar(targetIndex, step, delay) {
-  while (currentCarIndex !== targetIndex) {
-    await algorithmMove(step, delay);
-  }
 }
 
 async function runAlgorithmTwo() {
@@ -294,6 +410,7 @@ async function runAlgorithmTwo() {
     return;
   }
 
+  prepareAlgorithmStart();
   algorithmRunning = true;
   algorithmStatus = "Bidirectional Algorithm: running";
   algorithmResult = null;
@@ -302,54 +419,95 @@ async function runAlgorithmTwo() {
   algorithmIndicator.hidden = false;
 
   const count = clamp(Number(carCountInput.value) || MIN_CARS, MIN_CARS, MAX_CARS);
-  const delay = getAnimationDelay(count);
+  shouldRenderAlgorithmSteps = getAnimationDelay() > 0;
 
   carCountInput.value = count;
   syncLightStates(count);
   resetTraversal(count);
-  const firstCarIndex = currentCarIndex;
-  await animateAlgorithmStep(delay);
+  renderTrain();
+  await animateAlgorithmStep();
   await sleep(40);
 
-  lightStates[firstCarIndex] = true;
-  await animateAlgorithmStep(delay);
+  if (!algorithmRunning) {
+    setControlsDisabled(false);
+    algorithmIndicator.hidden = true;
+    renderTrain();
+    return;
+  }
 
-  let rightDistance = await moveUntilLightState(1, true, delay);
-  let rightBoundary = currentCarIndex;
+  lightStates[currentCarIndex] = true;
+  await animateAlgorithmStep();
 
-  lightStates[rightBoundary] = false;
-  await animateAlgorithmStep(delay);
-  await moveToCar(firstCarIndex, -1, delay);
-  await animateAlgorithmStep(delay);
+  if (!algorithmRunning) {
+    setControlsDisabled(false);
+    algorithmIndicator.hidden = true;
+    renderTrain();
+    return;
+  }
 
-  if (!lightStates[firstCarIndex]) {
+  let rightDistance = await moveUntilLightState(1, true);
+
+  if (!algorithmRunning) {
+    setControlsDisabled(false);
+    algorithmIndicator.hidden = true;
+    renderTrain();
+    return;
+  }
+
+  lightStates[currentCarIndex] = false;
+  await animateAlgorithmStep();
+  await moveSteps(-1, rightDistance);
+  await animateAlgorithmStep();
+
+  if (!algorithmRunning) {
+    setControlsDisabled(false);
+    algorithmIndicator.hidden = true;
+    renderTrain();
+    return;
+  }
+
+  if (!lightStates[currentCarIndex]) {
     algorithmResult = rightDistance;
     algorithmStatus = "Bidirectional Algorithm: complete";
   } else {
     let leftDistance = 0;
 
     while (algorithmRunning) {
-      leftDistance += await moveUntilLightState(-1, false, delay);
-      const leftBoundary = currentCarIndex;
+      leftDistance += await moveUntilLightState(-1, false);
 
-      lightStates[leftBoundary] = true;
-      await animateAlgorithmStep(delay);
-      await moveToCar(rightBoundary, 1, delay);
+      if (!algorithmRunning) {
+        break;
+      }
 
-      if (lightStates[rightBoundary]) {
+      lightStates[currentCarIndex] = true;
+      await animateAlgorithmStep();
+      await moveSteps(1, leftDistance + rightDistance);
+
+      if (!algorithmRunning) {
+        break;
+      }
+
+      if (lightStates[currentCarIndex]) {
         algorithmResult = leftDistance + rightDistance;
         algorithmStatus = "Bidirectional Algorithm: complete";
         break;
       }
 
-      rightDistance += await moveUntilLightState(1, true, delay);
-      rightBoundary = currentCarIndex;
+      rightDistance += await moveUntilLightState(1, true);
 
-      lightStates[rightBoundary] = false;
-      await animateAlgorithmStep(delay);
-      await moveToCar(leftBoundary, -1, delay);
+      if (!algorithmRunning) {
+        break;
+      }
 
-      if (!lightStates[leftBoundary]) {
+      lightStates[currentCarIndex] = false;
+      await animateAlgorithmStep();
+      await moveSteps(-1, leftDistance + rightDistance);
+
+      if (!algorithmRunning) {
+        break;
+      }
+
+      if (!lightStates[currentCarIndex]) {
         algorithmResult = leftDistance + rightDistance;
         algorithmStatus = "Bidirectional Algorithm: complete";
         break;
@@ -358,6 +516,91 @@ async function runAlgorithmTwo() {
   }
 
   algorithmRunning = false;
+  setControlsDisabled(false);
+  algorithmIndicator.hidden = true;
+  renderTrain();
+}
+
+async function runAlgorithmThree() {
+  if (algorithmRunning) {
+    return;
+  }
+
+  prepareAlgorithmStart();
+  algorithmRunning = true;
+  algorithmStatus = "Forward Scan Algorithm: running";
+  algorithmResult = null;
+  algorithmResultLabel = "Forward Scan Algorithm answer";
+  setControlsDisabled(true);
+  algorithmIndicator.hidden = false;
+
+  const count = clamp(Number(carCountInput.value) || MIN_CARS, MIN_CARS, MAX_CARS);
+  shouldRenderAlgorithmSteps = getAnimationDelay() > 0;
+
+  carCountInput.value = count;
+  syncLightStates(count);
+  resetTraversal(count);
+  renderTrain();
+  await animateAlgorithmStep();
+  await sleep(40);
+
+  while (algorithmRunning) {
+    let rememberedOffCars = 0;
+
+    lightStates[currentCarIndex] = true;
+    await animateAlgorithmStep();
+
+    if (!algorithmRunning) {
+      break;
+    }
+
+    do {
+      await algorithmMove(1);
+      rememberedOffCars += 1;
+    } while (algorithmRunning && !lightStates[currentCarIndex]);
+
+    if (!algorithmRunning) {
+      break;
+    }
+
+    lightStates[currentCarIndex] = false;
+    await animateAlgorithmStep();
+
+    while (algorithmRunning) {
+      let offCarsFromCurrent = 0;
+
+      do {
+        await algorithmMove(1);
+        offCarsFromCurrent += 1;
+      } while (algorithmRunning && offCarsFromCurrent <= rememberedOffCars && !lightStates[currentCarIndex]);
+
+      if (!algorithmRunning) {
+        break;
+      }
+
+      if (lightStates[currentCarIndex]) {
+        rememberedOffCars += offCarsFromCurrent;
+        lightStates[currentCarIndex] = false;
+        await animateAlgorithmStep();
+        continue;
+      }
+
+      await moveSteps(-1, rememberedOffCars + offCarsFromCurrent);
+
+      if (!algorithmRunning) {
+        break;
+      }
+
+      if (!lightStates[currentCarIndex]) {
+        algorithmResult = rememberedOffCars;
+        algorithmStatus = "Forward Scan Algorithm: complete";
+        algorithmRunning = false;
+      }
+
+      break;
+    }
+  }
+
   setControlsDisabled(false);
   algorithmIndicator.hidden = true;
   renderTrain();
@@ -439,7 +682,10 @@ function renderTrain() {
 carCountInput.addEventListener("input", () => {
   algorithmStatus = "";
   algorithmResult = null;
+  algorithmStartSnapshot = null;
+  updateResetButton();
   renderTrain();
+  setResetSnapshotFromCurrentLights();
 });
 lightActionButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -484,6 +730,27 @@ algorithmOneButton.addEventListener("click", () => {
 algorithmTwoButton.addEventListener("click", () => {
   runAlgorithmTwo();
 });
+algorithmThreeButton.addEventListener("click", () => {
+  runAlgorithmThree();
+});
+animationDelayInput.addEventListener("input", () => {
+  const delayIndex = ANIMATION_DELAYS.length - 1 - Number(animationDelayInput.value);
+
+  setAnimationDelay(ANIMATION_DELAYS[delayIndex]);
+  renderTrain();
+});
+speedStepButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    changeSpeed(Number(button.dataset.speedStep));
+    renderTrain();
+  });
+});
+stopAlgorithmButton.addEventListener("click", () => {
+  stopAlgorithm();
+});
+resetAlgorithmButton.addEventListener("click", () => {
+  resetToAlgorithmStart();
+});
 train.addEventListener("click", (event) => {
   if (algorithmRunning) {
     return;
@@ -498,6 +765,7 @@ train.addEventListener("click", (event) => {
   const carIndex = Number(car.dataset.carIndex);
 
   lightStates[carIndex] = !lightStates[carIndex];
+  setResetSnapshotFromCurrentLights();
   renderTrain();
 });
 document.addEventListener("keydown", (event) => {
@@ -522,4 +790,7 @@ document.addEventListener("keydown", (event) => {
 });
 window.addEventListener("resize", renderTrain);
 
+updateSpeedIndicator();
+setControlsDisabled(false);
 renderTrain();
+setResetSnapshotFromCurrentLights();
