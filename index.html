@@ -32,6 +32,19 @@
     <section class="scene" aria-live="polite">
       <div class="track" aria-hidden="true"></div>
       <div id="train" class="train" aria-label="Looped train"></div>
+      <div class="center-panel current-car-actions" aria-label="Current car controls">
+        <button class="icon-button" type="button" data-move="-1" aria-label="Previous car">
+          <span class="arrow-icon arrow-icon--left" aria-hidden="true"></span>
+        </button>
+
+        <button class="icon-button light-toggle" type="button" data-current-light-toggle aria-label="Toggle current car light">
+          <span class="bulb-icon" aria-hidden="true"></span>
+        </button>
+
+        <button class="icon-button" type="button" data-move="1" aria-label="Next car">
+          <span class="arrow-icon arrow-icon--right" aria-hidden="true"></span>
+        </button>
+      </div>
       <p id="summary" class="summary"></p>
     </section>
   </main>

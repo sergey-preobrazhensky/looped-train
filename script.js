@@ -1,5 +1,7 @@
 const carCountInput = document.querySelector("#car-count");
 const lightActionButtons = document.querySelectorAll("[data-light-action]");
+const moveButtons = document.querySelectorAll("[data-move]");
+const currentLightToggleButton = document.querySelector("[data-current-light-toggle]");
 const train = document.querySelector("#train");
 const summary = document.querySelector("#summary");
 
@@ -11,6 +13,7 @@ const CENTER = VIEWBOX_SIZE / 2;
 const RADIUS = 390;
 
 let lightStates = [];
+let currentCarIndex = 0;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -71,6 +74,36 @@ function createJoint(angle, carWidth) {
   });
 }
 
+function createPersonMarker(angle, carWidth) {
+  const markerRadius = RADIUS - Math.max(carWidth / 2 + 24, 34);
+  const position = getPointOnCircle(angle, markerRadius);
+  const marker = createSvgElement("g", {
+    class: "person-marker",
+    transform: `translate(${position.x} ${position.y})`,
+    "aria-label": `Person in car ${currentCarIndex + 1}`,
+  });
+  const badge = createSvgElement("circle", {
+    class: "person-marker__badge",
+    cx: 0,
+    cy: 0,
+    r: 26,
+  });
+  const head = createSvgElement("circle", {
+    class: "person-marker__head",
+    cx: 0,
+    cy: -8,
+    r: 7,
+  });
+  const body = createSvgElement("path", {
+    class: "person-marker__body",
+    d: "M -12 15 Q 0 3 12 15 Z",
+  });
+
+  marker.append(badge, head, body);
+
+  return marker;
+}
+
 function syncLightStates(count) {
   if (lightStates.length > count) {
     lightStates = lightStates.slice(0, count);
@@ -82,6 +115,10 @@ function syncLightStates(count) {
   }
 }
 
+function syncCurrentCar(count) {
+  currentCarIndex = clamp(currentCarIndex, 0, count - 1);
+}
+
 function setAllLights(isOn) {
   lightStates = lightStates.map(() => isOn);
   renderTrain();
@@ -90,6 +127,22 @@ function setAllLights(isOn) {
 function randomizeLights() {
   lightStates = lightStates.map(() => Math.random() >= 0.5);
   renderTrain();
+}
+
+function moveCurrentCar(step) {
+  const count = lightStates.length;
+
+  currentCarIndex = (currentCarIndex + step + count) % count;
+  renderTrain();
+}
+
+function setCurrentLight(isOn) {
+  lightStates[currentCarIndex] = isOn;
+  renderTrain();
+}
+
+function toggleCurrentLight() {
+  setCurrentLight(!lightStates[currentCarIndex]);
 }
 
 function renderTrain() {
@@ -107,6 +160,7 @@ function renderTrain() {
 
   carCountInput.value = count;
   syncLightStates(count);
+  syncCurrentCar(count);
   const lightsOn = lightStates.filter(Boolean).length;
   train.replaceChildren();
 
@@ -146,8 +200,13 @@ function renderTrain() {
     }
   }
 
+  const personAngle = -90 + segmentAngle * (currentCarIndex + 0.5);
+  svg.append(createPersonMarker(personAngle, carWidth));
+
   train.append(svg);
-  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on`;
+  currentLightToggleButton.classList.toggle("is-on", lightStates[currentCarIndex]);
+  currentLightToggleButton.setAttribute("aria-pressed", String(lightStates[currentCarIndex]));
+  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on<br>Current car: ${currentCarIndex + 1} (${lightStates[currentCarIndex] ? "on" : "off"})`;
 }
 
 carCountInput.addEventListener("input", renderTrain);
@@ -167,6 +226,14 @@ lightActionButtons.forEach((button) => {
       randomizeLights();
     }
   });
+});
+moveButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    moveCurrentCar(Number(button.dataset.move));
+  });
+});
+currentLightToggleButton.addEventListener("click", () => {
+  toggleCurrentLight();
 });
 window.addEventListener("resize", renderTrain);
 
