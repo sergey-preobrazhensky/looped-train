@@ -212,20 +212,30 @@ function getGapAngle(count) {
   return Math.min(3, 18 / count);
 }
 
-function createVisitedMarker(startAngle, endAngle, carWidth) {
-  const markerRadius = RADIUS - carWidth / 2 - 9;
-  const markerWidth = clamp(carWidth * 0.14, 2, 8);
+function getCarChordLength(count) {
+  const segmentAngle = 360 / count;
+  const gapAngle = getGapAngle(count);
+  const carAngle = ((segmentAngle - gapAngle) * Math.PI) / 180;
 
-  return createSvgElement("path", {
+  return clamp(2 * RADIUS * Math.sin(carAngle / 2), 14, 320);
+}
+
+function createVisitedMarker(cx, cy, rotateDeg, carLength, carHeight) {
+  const markerHeight = clamp(carHeight * 0.12, 2, 7);
+
+  return createSvgElement("rect", {
     class: "visited-marker",
-    d: getArcPath(startAngle, endAngle, markerRadius),
-    "stroke-width": markerWidth,
+    x: -(carLength - 6) / 2,
+    y: carHeight / 2 - markerHeight - 2,
+    width: carLength - 6,
+    height: markerHeight,
+    rx: markerHeight / 2,
+    transform: `translate(${cx}, ${cy}) rotate(${rotateDeg})`,
   });
 }
 
-function createPersonMarker(angle, carWidth) {
-  const markerRadius = RADIUS - Math.max(carWidth / 2 + 24, 34);
-  const position = getPointOnCircle(angle, markerRadius);
+function createPersonMarker(angle) {
+  const position = getPointOnCircle(angle, RADIUS);
   const marker = createSvgElement("g", {
     class: "person-marker",
     transform: `translate(${position.x} ${position.y})`,
@@ -768,31 +778,56 @@ function renderTrain() {
   const algorithmResultLine = algorithmResult === null ? "" : `<br>${resultLabelText}: ${algorithmResult}`;
   train.replaceChildren();
 
+  const carLength = getCarChordLength(count);
+  const cornerRadius = clamp(carWidth * 0.12, 2, 10);
+  const roofInset = carWidth * 0.05;
+  const roofHeight = carWidth * 0.9;
+
   for (let index = 0; index < count; index += 1) {
-    const startAngle = -90 + segmentAngle * index + gapAngle / 2;
-    const endAngle = -90 + segmentAngle * (index + 1) - gapAngle / 2;
-    const car = createSvgElement("path", {
-      class: `car-segment${lightStates[index] ? "" : " car-segment--off"}`,
-      d: getArcPath(startAngle, endAngle),
+    const midAngle = -90 + segmentAngle * (index + 0.5);
+    const midAngleRad = (midAngle * Math.PI) / 180;
+    const cx = CENTER + RADIUS * Math.cos(midAngleRad);
+    const cy = CENTER + RADIUS * Math.sin(midAngleRad);
+    const rotateDeg = midAngle + 90;
+    const carTransform = `translate(${cx}, ${cy}) rotate(${rotateDeg})`;
+    const isOn = lightStates[index];
+
+    const car = createSvgElement("rect", {
+      class: `car-segment${isOn ? "" : " car-segment--off"}`,
+      x: -carLength / 2,
+      y: -carWidth / 2,
+      width: carLength,
+      height: carWidth,
+      rx: cornerRadius,
+      transform: carTransform,
+      "aria-label": `Car ${index + 1}`,
     });
 
-    car.style.setProperty("--car-width", carWidth);
-    car.setAttribute("stroke-width", carWidth);
-    car.setAttribute("aria-label", `Car ${index + 1}`);
     car.dataset.carIndex = index;
     svg.append(car);
 
+    const roof = createSvgElement("rect", {
+      class: "car-roof",
+      x: -carLength / 2,
+      y: -carWidth / 2 + roofInset,
+      width: carLength,
+      height: roofHeight,
+      rx: cornerRadius,
+      transform: carTransform,
+      "pointer-events": "none",
+    });
+
+    svg.append(roof);
+
     if (visitedCars[index]) {
-      svg.append(createVisitedMarker(startAngle, endAngle, carWidth));
+      svg.append(createVisitedMarker(cx, cy, rotateDeg, carLength, carWidth));
     }
 
     if (showLabels) {
-      const labelAngle = -90 + segmentAngle * (index + 0.5);
-      const labelPoint = getPointOnCircle(labelAngle);
       const label = createSvgElement("text", {
-        class: "car-label",
-        x: labelPoint.x,
-        y: labelPoint.y,
+        class: `car-label${isOn ? "" : " car-label--off"}`,
+        x: cx,
+        y: cy,
       });
 
       label.textContent = index + 1;
@@ -801,7 +836,7 @@ function renderTrain() {
   }
 
   const personAngle = -90 + segmentAngle * (currentCarIndex + 0.5);
-  svg.append(createPersonMarker(personAngle, carWidth));
+  svg.append(createPersonMarker(personAngle));
 
   train.append(svg);
   currentLightToggleButton.classList.toggle("is-on", lightStates[currentCarIndex]);

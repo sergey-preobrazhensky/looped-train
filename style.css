@@ -554,28 +554,33 @@ button:disabled {
 }
 
 .car-segment {
-  fill: none;
-  stroke: var(--car);
-  stroke-linecap: butt;
+  fill: var(--car);
   cursor: pointer;
-  filter: drop-shadow(0 0 5px rgba(255, 209, 102, 0.42));
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.38));
 }
 
 .car-segment--off {
-  stroke: #334155;
-  filter: drop-shadow(0 0 3px rgba(15, 23, 42, 0.5));
+  fill: #2a3a52;
+  filter: none;
 }
 
 .train-svg--dense .car-segment {
   filter: none;
 }
 
-.visited-marker {
-  fill: none;
-  stroke: var(--accent);
-  stroke-linecap: round;
+.car-roof {
+  fill: rgba(47, 21, 1, 0.80);
   pointer-events: none;
-  filter: drop-shadow(0 0 5px rgba(98, 210, 255, 0.45));
+}
+
+.car-segment--off + .car-roof {
+  fill: rgb(47, 21, 1);
+}
+
+.visited-marker {
+  fill: var(--accent);
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(98, 210, 255, 0.6));
 }
 
 .train-svg--dense .visited-marker {
@@ -584,12 +589,16 @@ button:disabled {
 
 
 .car-label {
-  fill: #2b2208;
+  fill: rgba(30, 18, 4, 0.75);
   font-size: 34px;
   font-weight: 800;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
+}
+
+.car-label--off {
+  fill: rgba(174, 185, 202, 0.55);
 }
 
 .person-marker {
