@@ -28,20 +28,131 @@ const ANIMATION_DELAYS = [
   ...Array.from({ length: 19 }, (_, index) => (index + 2) * 100),
 ];
 const MAX_ANIMATION_DELAY = 2000;
-const ALGORITHM_DESCRIPTIONS = {
-  one: {
-    title: "Simple Algorithm",
-    text: "Turn on the first car, walk forward to the next lit car, turn it off, then walk back by the counted distance. If the first car is now off, the counted distance is the answer. Otherwise repeat.",
+const TRANSLATIONS = {
+  en: {
+    eyebrow: "Task visualization",
+    title: "Looped Train",
+    description: [
+      "Imagine a circular railway. A train runs along it with the last car coupled to the first, so you can freely move between cars from the inside. You find yourself in one random car, and your task is to count the total number of cars. Each car has a light that you can switch on or off, but the initial state of each switch is random and unknown in advance.",
+      "All cars look exactly the same on the inside, the windows are covered so you cannot see outside, and the train moves at a constant speed. You cannot mark cars in any way other than switching their lights on or off. The number of cars is finite.",
+    ],
+    speed: "Speed",
+    algoOne: "Simple Algorithm",
+    algoTwo: "Bidirectional Algorithm",
+    algoThree: "Forward Scan Algorithm",
+    descriptions: {
+      one: {
+        title: "Simple Algorithm",
+        text: "Turn on the light in the first car, walk forward counting cars until you reach a car with the light on, turn it off, then walk back to the first car. If the light in the first car is now off, you have counted all the cars. If it is still on, repeat the procedure.",
+      },
+      two: {
+        title: "Bidirectional Algorithm",
+        text: "1. Turn on the light in the first car.\n2. Walk forward to the first lit car and turn off its light.\n3. Return to the first car. If its light is off, you have found the count.\n4. If its light is on, walk backward to the first unlit car.\n5. Turn on its light, then walk forward to the car from step\u00a02.\n6. If its light is on, you have counted all the cars.\n7. If it is off, continue forward to the next lit car and turn it off.\n8. Walk back to the car from step\u00a04.\n9. If its light is off, you have counted all the cars. If not, repeat steps 4–9 for the new boundary cars.",
+      },
+      three: {
+        title: "Forward Scan Algorithm",
+        text: "1. Turn on the light in the first car. Walk forward counting cars until you reach a lit car.\n2. Turn off its light. Remember the total number of unlit cars passed.\n3. Keep walking while cars are unlit and the count from the current position is less than the number remembered in step\u00a02.\n4. If you reach a lit car, repeat step\u00a02. If the count of unlit cars exceeds the remembered number, walk back to the first car.\n5. If the first car's light is off, you have found the total. If it is on, repeat from step\u00a01.",
+      },
+    },
+    lightOn: "on",
+    lightOff: "off",
+    summaryCurrentCar: (i, state) => `Current car: ${i} (${state})`,
+    summaryVisited: (n, total) => `Visited: ${n}/${total}`,
+    summarySteps: (n) => `Steps: ${n}`,
+    statusStopped: "Algorithm stopped",
+    status: {
+      "one.running": "Simple Algorithm: running",
+      "two.running": "Bidirectional Algorithm: running",
+      "three.running": "Forward Scan Algorithm: running",
+      "one.complete": "Simple Algorithm: complete",
+      "two.complete": "Bidirectional Algorithm: complete",
+      "three.complete": "Forward Scan Algorithm: complete",
+    },
+    resultLabel: {
+      one: "Simple Algorithm answer",
+      two: "Bidirectional Algorithm answer",
+      three: "Forward Scan Algorithm answer",
+    },
+    ariaLightsOff: "Turn all lights off",
+    ariaLightsOn: "Turn all lights on",
+    ariaRandom: "Randomize lights",
+    ariaDecrease: "Decrease speed",
+    ariaIncrease: "Increase speed",
+    ariaStop: "Stop algorithm",
+    ariaReset: "Reset to saved state",
+    ariaPrev: "Previous car",
+    ariaNext: "Next car",
+    ariaToggleLight: "Toggle current car light",
+    ariaCars: "Number of cars",
+    ariaComputing: "Computing",
+    ariaCarCount: (n) => `${n} ${n === 1 ? "car" : "cars"} connected in a loop`,
   },
-  two: {
-    title: "Bidirectional Algorithm",
-    text: "Keep two remembered borders around the first car. Move right to switch off a lit border, move left to switch on an unlit border, and stop when either remembered border proves the whole loop has been counted.",
-  },
-  three: {
-    title: "Forward Scan Algorithm",
-    text: "Turn on the first car, walk forward to lit cars and switch them off, remembering the longest confirmed dark run. When the next dark run becomes longer than that memory, walk back by the remembered path and test the first car.",
+  ru: {
+    eyebrow: "Визуализация задачи",
+    title: "Зацикленный поезд",
+    description: [
+      "Представьте себе замкнутую по окружности железную дорогу. По ней едет поезд, последний вагон которого скреплён с первым так, что внутри можно свободно перемещаться между вагонами. Вы оказались в одном случайном вагоне и ваша задача\u00a0— подсчитать их общее количество. В каждом вагоне можно включать или выключать свет, но начальное положение переключателей случайное и заранее неизвестно.",
+      "Все вагоны внутри выглядят строго одинаково, окна закрыты так, что невозможно посмотреть наружу, движение поезда равномерное. Помечать вагоны как-либо, кроме включения или выключения света, нельзя. Количество вагонов конечно.",
+    ],
+    speed: "Скорость",
+    algoOne: "Простой алгоритм",
+    algoTwo: "Двунаправленный алгоритм",
+    algoThree: "Запоминание пути",
+    descriptions: {
+      one: {
+        title: "Простой алгоритм",
+        text: "Включаем свет в первом вагоне, идём вперёд считая вагоны до первого вагона с включённым светом, выключаем там свет, возвращаемся в первый вагон. Если в первом вагоне свет выключен - значит мы посчитали все вагоны. Если свет в первом вагоне включён - повторяем процедуру.",
+      },
+      two: {
+        title: "Двунаправленный алгоритм",
+        text: "1. Включаем свет в первом вагоне.\n2. Идём вперёд до первого вагона с включённым светом, выключаем там свет.\n3. Возвращаемся в первый вагон. Если свет выключен - мы нашли количество вагонов.\n4. Если свет включён - идём назад до первого вагона с выключённым светом.\n5. Включаем там свет, идём вперёд до вагона из п.\u20092.\n6. Если там свет включён - мы посчитали все вагоны.\n7. Если выключен - идём дальше до первого вагона с включённым светом и выключаем его.\n8. Идём назад до вагона из п.\u20094.\n9. Если там свет выключен - мы посчитали все вагоны. Если нет - повторяем шаги 4–9 для новых крайних вагонов.",
+      },
+      three: {
+        title: "Запоминание пути",
+        text: "1. Включаем свет в первом вагоне. Идём вперёд считая вагоны до первого вагона с включённым светом.\n2. Выключаем там свет. Запоминаем общее число пройденных выключенных вагонов.\n3. Идём дальше пока вагоны выключены и их число начиная с текущего меньше запомненного в п.\u20092.\n4. Если попадается включённый вагон - повторяем п.\u20092. Если число выключенных вагонов больше запомненного в п.\u20092 - возвращаемся к первому вагону.\n5. Если первый вагон выключен - мы нашли все вагоны. Если включён - повторяем алгоритм с п.\u20091.",
+      },
+    },
+    lightOn: "вкл",
+    lightOff: "выкл",
+    summaryCurrentCar: (i, state) => `Текущий вагон: ${i} (${state})`,
+    summaryVisited: (n, total) => `Посещено: ${n}/${total}`,
+    summarySteps: (n) => `Шаги: ${n}`,
+    statusStopped: "Алгоритм остановлен",
+    status: {
+      "one.running": "Простой алгоритм: выполняется",
+      "two.running": "Двунаправленный: выполняется",
+      "three.running": "Запоминание пути: выполняется",
+      "one.complete": "Простой алгоритм: завершён",
+      "two.complete": "Двунаправленный: завершён",
+      "three.complete": "Запоминание пути: завершён",
+    },
+    resultLabel: {
+      one: "Ответ (простой)",
+      two: "Ответ (двунаправленный)",
+      three: "Ответ (прямое сканирование)",
+    },
+    ariaLightsOff: "Выключить все",
+    ariaLightsOn: "Включить все",
+    ariaRandom: "Случайные",
+    ariaDecrease: "Медленнее",
+    ariaIncrease: "Быстрее",
+    ariaStop: "Остановить",
+    ariaReset: "Сбросить",
+    ariaPrev: "Предыдущий вагон",
+    ariaNext: "Следующий вагон",
+    ariaToggleLight: "Переключить свет",
+    ariaCars: "Количество вагонов",
+    ariaComputing: "Вычисление",
+    ariaCarCount: (n) => `${n} ${n === 1 ? "вагон" : "вагонов"} в кольце`,
   },
 };
+
+const currentLangFromSystem = navigator.language.startsWith("ru") ? "ru" : "en";
+let currentLang = currentLangFromSystem;
+
+function t() {
+  return TRANSLATIONS[currentLang];
+}
 
 let lightStates = [];
 let visitedCars = [];
@@ -51,7 +162,7 @@ let currentCarCount = null;
 let algorithmRunning = false;
 let algorithmStatus = "";
 let algorithmResult = null;
-let algorithmResultLabel = "Simple Algorithm answer";
+let algorithmResultLabel = "one";
 let animationDelay = 500;
 let algorithmStartSnapshot = null;
 let shouldRenderAlgorithmSteps = true;
@@ -98,26 +209,12 @@ function getCarWidth(count) {
 }
 
 function getGapAngle(count) {
-  if (count === 1) {
-    return 0;
-  }
-
   return Math.min(3, 18 / count);
 }
 
-function createVisitedMarker(startAngle, endAngle, carWidth, count) {
+function createVisitedMarker(startAngle, endAngle, carWidth) {
   const markerRadius = RADIUS - carWidth / 2 - 9;
   const markerWidth = clamp(carWidth * 0.14, 2, 8);
-
-  if (count === 1) {
-    return createSvgElement("circle", {
-      class: "visited-marker",
-      cx: CENTER,
-      cy: CENTER,
-      r: markerRadius,
-      "stroke-width": markerWidth,
-    });
-  }
 
   return createSvgElement("path", {
     class: "visited-marker",
@@ -194,7 +291,7 @@ function setAnimationDelay(delay) {
 }
 
 function showAlgorithmDescription(algorithmKey) {
-  const description = ALGORITHM_DESCRIPTIONS[algorithmKey];
+  const description = t().descriptions[algorithmKey];
 
   if (!description) {
     return;
@@ -228,11 +325,12 @@ function setResetSnapshotFromCurrentLights() {
   algorithmRunning = false;
   currentCarIndex = 0;
   visitedCars = Array(lightStates.length).fill(false);
+  visitedCars[0] = true;
   totalSteps = 0;
   currentCarCount = lightStates.length;
   algorithmStatus = "";
   algorithmResult = null;
-  algorithmResultLabel = "Simple Algorithm answer";
+  algorithmResultLabel = "one";
   algorithmStartSnapshot = createStateSnapshot();
   updateResetButton();
 }
@@ -247,7 +345,7 @@ function stopAlgorithm() {
   }
 
   algorithmRunning = false;
-  algorithmStatus = "Algorithm stopped";
+  algorithmStatus = "stopped";
   algorithmIndicator.hidden = true;
   setControlsDisabled(false);
   renderTrain();
@@ -263,11 +361,12 @@ function resetToAlgorithmStart() {
   lightStates = [...algorithmStartSnapshot.lightStates];
   visitedCars = Array(lightStates.length).fill(false);
   currentCarIndex = 0;
+  visitedCars[0] = true;
   totalSteps = 0;
   currentCarCount = lightStates.length;
   algorithmStatus = "";
   algorithmResult = null;
-  algorithmResultLabel = "Simple Algorithm answer";
+  algorithmResultLabel = "one";
   algorithmIndicator.hidden = true;
   setControlsDisabled(false);
   renderTrain();
@@ -370,9 +469,9 @@ async function runAlgorithmOne() {
 
   prepareAlgorithmStart();
   algorithmRunning = true;
-  algorithmStatus = "Simple Algorithm: running";
+  algorithmStatus = "one.running";
   algorithmResult = null;
-  algorithmResultLabel = "Simple Algorithm answer";
+  algorithmResultLabel = "one";
   setControlsDisabled(true);
   algorithmIndicator.hidden = false;
 
@@ -416,7 +515,7 @@ async function runAlgorithmOne() {
 
     if (!lightStates[currentCarIndex]) {
       algorithmResult = countedCars;
-      algorithmStatus = "Simple Algorithm: complete";
+      algorithmStatus = "one.complete";
       break;
     }
   }
@@ -445,9 +544,9 @@ async function runAlgorithmTwo() {
 
   prepareAlgorithmStart();
   algorithmRunning = true;
-  algorithmStatus = "Bidirectional Algorithm: running";
+  algorithmStatus = "two.running";
   algorithmResult = null;
-  algorithmResultLabel = "Bidirectional Algorithm answer";
+  algorithmResultLabel = "two";
   setControlsDisabled(true);
   algorithmIndicator.hidden = false;
 
@@ -501,7 +600,7 @@ async function runAlgorithmTwo() {
 
   if (!lightStates[currentCarIndex]) {
     algorithmResult = rightDistance;
-    algorithmStatus = "Bidirectional Algorithm: complete";
+    algorithmStatus = "two.complete";
   } else {
     let leftDistance = 0;
 
@@ -522,7 +621,7 @@ async function runAlgorithmTwo() {
 
       if (lightStates[currentCarIndex]) {
         algorithmResult = leftDistance + rightDistance;
-        algorithmStatus = "Bidirectional Algorithm: complete";
+        algorithmStatus = "two.complete";
         break;
       }
 
@@ -542,7 +641,7 @@ async function runAlgorithmTwo() {
 
       if (!lightStates[currentCarIndex]) {
         algorithmResult = leftDistance + rightDistance;
-        algorithmStatus = "Bidirectional Algorithm: complete";
+        algorithmStatus = "two.complete";
         break;
       }
     }
@@ -561,9 +660,9 @@ async function runAlgorithmThree() {
 
   prepareAlgorithmStart();
   algorithmRunning = true;
-  algorithmStatus = "Forward Scan Algorithm: running";
+  algorithmStatus = "three.running";
   algorithmResult = null;
-  algorithmResultLabel = "Forward Scan Algorithm answer";
+  algorithmResultLabel = "three";
   setControlsDisabled(true);
   algorithmIndicator.hidden = false;
 
@@ -626,7 +725,7 @@ async function runAlgorithmThree() {
 
       if (!lightStates[currentCarIndex]) {
         algorithmResult = rememberedOffCars;
-        algorithmStatus = "Forward Scan Algorithm: complete";
+        algorithmStatus = "three.complete";
         algorithmRunning = false;
       }
 
@@ -649,7 +748,7 @@ function renderTrain() {
     class: count > 120 ? "train-svg train-svg--dense" : "train-svg",
     viewBox: `0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`,
     role: "img",
-    "aria-label": `${count} ${count === 1 ? "car" : "cars"} connected in a loop`,
+    "aria-label": t().ariaCarCount(count),
   });
 
   carCountInput.value = count;
@@ -659,25 +758,23 @@ function renderTrain() {
   } else {
     syncCurrentCar(count);
   }
-  const lightsOn = lightStates.filter(Boolean).length;
   const visitedCount = visitedCars.filter(Boolean).length;
-  const algorithmResultLine = algorithmResult === null ? "" : `<br>${algorithmResultLabel}: ${algorithmResult}`;
+  const tr = t();
+  const lightStateText = lightStates[currentCarIndex] ? tr.lightOn : tr.lightOff;
+  const statusText = algorithmStatus === "stopped"
+    ? tr.statusStopped
+    : (algorithmStatus ? tr.status[algorithmStatus] ?? algorithmStatus : "");
+  const resultLabelText = tr.resultLabel[algorithmResultLabel] ?? algorithmResultLabel;
+  const algorithmResultLine = algorithmResult === null ? "" : `<br>${resultLabelText}: ${algorithmResult}`;
   train.replaceChildren();
 
   for (let index = 0; index < count; index += 1) {
     const startAngle = -90 + segmentAngle * index + gapAngle / 2;
     const endAngle = -90 + segmentAngle * (index + 1) - gapAngle / 2;
-    const car = count === 1
-      ? createSvgElement("circle", {
-        class: `car-segment car-segment--full${lightStates[index] ? "" : " car-segment--off"}`,
-        cx: CENTER,
-        cy: CENTER,
-        r: RADIUS,
-      })
-      : createSvgElement("path", {
-        class: `car-segment${lightStates[index] ? "" : " car-segment--off"}`,
-        d: getArcPath(startAngle, endAngle),
-      });
+    const car = createSvgElement("path", {
+      class: `car-segment${lightStates[index] ? "" : " car-segment--off"}`,
+      d: getArcPath(startAngle, endAngle),
+    });
 
     car.style.setProperty("--car-width", carWidth);
     car.setAttribute("stroke-width", carWidth);
@@ -686,7 +783,7 @@ function renderTrain() {
     svg.append(car);
 
     if (visitedCars[index]) {
-      svg.append(createVisitedMarker(startAngle, endAngle, carWidth, count));
+      svg.append(createVisitedMarker(startAngle, endAngle, carWidth));
     }
 
     if (showLabels) {
@@ -709,7 +806,7 @@ function renderTrain() {
   train.append(svg);
   currentLightToggleButton.classList.toggle("is-on", lightStates[currentCarIndex]);
   currentLightToggleButton.setAttribute("aria-pressed", String(lightStates[currentCarIndex]));
-  summary.innerHTML = `<strong>${count}</strong>${count === 1 ? "car" : "cars"} connected in a loop<br>${lightsOn} lights on<br>Current car: ${currentCarIndex + 1} (${lightStates[currentCarIndex] ? "on" : "off"})<br>Visited: ${visitedCount}/${count}<br>Steps: ${totalSteps}${algorithmStatus ? `<br>${algorithmStatus}` : ""}${algorithmResultLine}`;
+  summary.innerHTML = `${tr.summaryCurrentCar(currentCarIndex + 1, lightStateText)}<br>${tr.summaryVisited(visitedCount, count)}<br>${tr.summarySteps(totalSteps)}${statusText ? `<br>${statusText}` : ""}${algorithmResultLine}`;
 }
 
 carCountInput.addEventListener("input", () => {
@@ -826,7 +923,59 @@ document.addEventListener("keydown", (event) => {
 });
 window.addEventListener("resize", renderTrain);
 
+function applyTranslations() {
+  const tr = t();
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.dataset.i18n;
+    const value = tr[key];
+
+    if (value === undefined) {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      el.innerHTML = value.map((p) => `<p>${p}</p>`).join("");
+    } else {
+      el.textContent = value;
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    const key = el.dataset.i18nAria;
+
+    if (tr[key] !== undefined) {
+      el.setAttribute("aria-label", tr[key]);
+    }
+  });
+
+  const langToggle = document.querySelector("#lang-toggle");
+
+  if (langToggle) {
+    langToggle.textContent = currentLang === "en" ? "RU" : "EN";
+  }
+
+  document.documentElement.lang = currentLang;
+
+  if (!algorithmDescription.hidden) {
+    const activeButton = document.querySelector(".scene-algorithm-actions button.is-active");
+
+    if (activeButton) {
+      showAlgorithmDescription(activeButton.dataset.algorithm);
+    }
+  }
+}
+
+function toggleLang() {
+  currentLang = currentLang === "en" ? "ru" : "en";
+  applyTranslations();
+  renderTrain();
+}
+
+document.querySelector("#lang-toggle").addEventListener("click", toggleLang);
+
 updateSpeedIndicator();
 setControlsDisabled(false);
+applyTranslations();
 renderTrain();
 setResetSnapshotFromCurrentLights();

@@ -8,78 +8,76 @@
 </head>
 <body>
   <main class="page">
+    <button class="lang-toggle" id="lang-toggle" type="button">RU</button>
+
     <section class="intro">
-      <p class="eyebrow">Task visualization</p>
-      <h1>Looped Train</h1>
-      <p class="description">
-        Enter the number of cars to see a train where the last car is connected to the first one.
-      </p>
-    </section>
-
-    <section class="controls" aria-label="Visualization settings">
-      <div class="count-control">
-        <label for="car-count">Number of cars</label>
-        <input id="car-count" type="number" min="1" max="1000" value="12" inputmode="numeric">
-      </div>
-
-      <div class="light-actions" aria-label="Light controls">
-        <button class="icon-control icon-control--lights-off" type="button" data-light-action="off" aria-label="Turn all lights off">
-          <span aria-hidden="true"></span>
-        </button>
-        <button class="icon-control icon-control--lights-on" type="button" data-light-action="on" aria-label="Turn all lights on">
-          <span aria-hidden="true"></span>
-        </button>
-        <button class="icon-control icon-control--random" type="button" data-light-action="random" aria-label="Randomize lights">
-          <span aria-hidden="true"></span>
-        </button>
-      </div>
+      <p class="eyebrow" data-i18n="eyebrow">Task visualization</p>
+      <h1 data-i18n="title">Looped Train</h1>
+      <div class="description" data-i18n="description"></div>
     </section>
 
     <section class="scene" aria-live="polite">
+      <div class="scene-controls" aria-label="Visualization settings">
+        <div class="count-control">
+          <input id="car-count" type="number" min="1" max="1000" value="12" inputmode="numeric" data-i18n-aria="ariaCars" aria-label="Number of cars">
+        </div>
+
+        <div class="light-actions" aria-label="Light controls">
+          <button class="icon-control icon-control--lights-off" type="button" data-light-action="off" data-i18n-aria="ariaLightsOff" aria-label="Turn all lights off">
+            <span aria-hidden="true"></span>
+          </button>
+          <button class="icon-control icon-control--lights-on" type="button" data-light-action="on" data-i18n-aria="ariaLightsOn" aria-label="Turn all lights on">
+            <span aria-hidden="true"></span>
+          </button>
+          <button class="icon-control icon-control--random" type="button" data-light-action="random" data-i18n-aria="ariaRandom" aria-label="Randomize lights">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
       <div class="scene-tools" aria-label="Algorithm runtime controls">
         <div class="speed-control" aria-label="Speed control">
-          <label for="animation-delay">Speed</label>
-          <button class="speed-step" type="button" data-speed-step="-1" aria-label="Decrease speed">-</button>
+          <label for="animation-delay" data-i18n="speed">Speed</label>
+          <button class="speed-step" type="button" data-speed-step="-1" data-i18n-aria="ariaDecrease" aria-label="Decrease speed">-</button>
           <input id="animation-delay" type="range" min="0" max="22" value="14">
-          <button class="speed-step" type="button" data-speed-step="1" aria-label="Increase speed">+</button>
+          <button class="speed-step" type="button" data-speed-step="1" data-i18n-aria="ariaIncrease" aria-label="Increase speed">+</button>
         </div>
-        <button class="stop-button" type="button" data-stop-algorithm aria-label="Stop algorithm">
+        <button class="stop-button" type="button" data-stop-algorithm data-i18n-aria="ariaStop" aria-label="Stop algorithm">
           <span aria-hidden="true"></span>
         </button>
+        <span id="algorithm-indicator" class="algorithm-indicator" hidden data-i18n-aria="ariaComputing" aria-label="Computing">
+          <span class="loader" aria-hidden="true"></span>
+        </span>
       </div>
       <div id="train" class="train" aria-label="Looped train"></div>
       <div class="center-panel current-car-actions" aria-label="Current car controls">
-        <button class="icon-button" type="button" data-move="-1" aria-label="Previous car">
+        <button class="icon-button" type="button" data-move="-1" data-i18n-aria="ariaPrev" aria-label="Previous car">
           <span class="arrow-icon arrow-icon--left" aria-hidden="true"></span>
         </button>
 
-        <button class="icon-button light-toggle" type="button" data-current-light-toggle aria-label="Toggle current car light">
+        <button class="icon-button light-toggle" type="button" data-current-light-toggle data-i18n-aria="ariaToggleLight" aria-label="Toggle current car light">
           <span class="bulb-icon" aria-hidden="true"></span>
         </button>
 
-        <button class="icon-button" type="button" data-move="1" aria-label="Next car">
+        <button class="icon-button" type="button" data-move="1" data-i18n-aria="ariaNext" aria-label="Next car">
           <span class="arrow-icon arrow-icon--right" aria-hidden="true"></span>
         </button>
       </div>
       <div class="summary-card">
-        <button class="summary-reset" type="button" data-reset-algorithm aria-label="Reset to saved state">
-          <span aria-hidden="true"></span>
+        <button class="summary-reset" type="button" data-reset-algorithm data-i18n-aria="ariaReset" aria-label="Reset to saved state">
+          <svg class="reset-icon" aria-hidden="true" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path d="M64,256H34A222,222,0,0,1,430,118.15V85h30V190H355V160h67.27A192.21,192.21,0,0,0,256,64C150.13,64,64,150.13,64,256Zm384,0c0,105.87-86.13,192-192,192A192.21,192.21,0,0,1,89.73,352H157V322H52V427H82V393.85A222,222,0,0,0,478,256Z"/>
+          </svg>
         </button>
         <p id="summary" class="summary"></p>
+      </div>
+      <div class="scene-algorithm-actions" aria-label="Algorithm controls">
+        <button type="button" data-algorithm="one" data-i18n="algoOne">Simple Algorithm</button>
+        <button type="button" data-algorithm="two" data-i18n="algoTwo">Bidirectional Algorithm</button>
+        <button type="button" data-algorithm="three" data-i18n="algoThree">Forward Scan Algorithm</button>
       </div>
     </section>
 
     <section class="algorithm-panel" aria-label="Algorithm selection">
-      <div class="algorithm-actions" aria-label="Algorithm controls">
-        <button type="button" data-algorithm="one">Simple Algorithm</button>
-        <button type="button" data-algorithm="two">Bidirectional Algorithm</button>
-        <button type="button" data-algorithm="three">Forward Scan Algorithm</button>
-        <span id="algorithm-indicator" class="algorithm-indicator" hidden>
-          <span class="loader" aria-hidden="true"></span>
-          Computing
-        </span>
-      </div>
-
       <article id="algorithm-description" class="algorithm-description" hidden>
         <h2></h2>
         <p></p>
