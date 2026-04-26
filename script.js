@@ -10,6 +10,9 @@ const speedStepButtons = document.querySelectorAll("[data-speed-step]");
 const stopAlgorithmButton = document.querySelector("[data-stop-algorithm]");
 const resetAlgorithmButton = document.querySelector("[data-reset-algorithm]");
 const algorithmIndicator = document.querySelector("#algorithm-indicator");
+const algorithmDescription = document.querySelector("#algorithm-description");
+const algorithmDescriptionTitle = algorithmDescription.querySelector("h2");
+const algorithmDescriptionText = algorithmDescription.querySelector("p");
 const train = document.querySelector("#train");
 const summary = document.querySelector("#summary");
 
@@ -25,6 +28,20 @@ const ANIMATION_DELAYS = [
   ...Array.from({ length: 19 }, (_, index) => (index + 2) * 100),
 ];
 const MAX_ANIMATION_DELAY = 2000;
+const ALGORITHM_DESCRIPTIONS = {
+  one: {
+    title: "Simple Algorithm",
+    text: "Turn on the first car, walk forward to the next lit car, turn it off, then walk back by the counted distance. If the first car is now off, the counted distance is the answer. Otherwise repeat.",
+  },
+  two: {
+    title: "Bidirectional Algorithm",
+    text: "Keep two remembered borders around the first car. Move right to switch off a lit border, move left to switch on an unlit border, and stop when either remembered border proves the whole loop has been counted.",
+  },
+  three: {
+    title: "Forward Scan Algorithm",
+    text: "Turn on the first car, walk forward to lit cars and switch them off, remembering the longest confirmed dark run. When the next dark run becomes longer than that memory, walk back by the remembered path and test the first car.",
+  },
+};
 
 let lightStates = [];
 let visitedCars = [];
@@ -174,6 +191,22 @@ function setAnimationDelay(delay) {
   animationDelay = clamp(delay, 0, MAX_ANIMATION_DELAY);
   shouldRenderAlgorithmSteps = animationDelay > 0;
   updateSpeedIndicator();
+}
+
+function showAlgorithmDescription(algorithmKey) {
+  const description = ALGORITHM_DESCRIPTIONS[algorithmKey];
+
+  if (!description) {
+    return;
+  }
+
+  algorithmDescriptionTitle.textContent = description.title;
+  algorithmDescriptionText.textContent = description.text;
+  algorithmDescription.hidden = false;
+
+  [algorithmOneButton, algorithmTwoButton, algorithmThreeButton].forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.algorithm === algorithmKey);
+  });
 }
 
 function changeSpeed(step) {
@@ -725,12 +758,15 @@ currentLightToggleButton.addEventListener("click", () => {
   toggleCurrentLight();
 });
 algorithmOneButton.addEventListener("click", () => {
+  showAlgorithmDescription("one");
   runAlgorithmOne();
 });
 algorithmTwoButton.addEventListener("click", () => {
+  showAlgorithmDescription("two");
   runAlgorithmTwo();
 });
 algorithmThreeButton.addEventListener("click", () => {
+  showAlgorithmDescription("three");
   runAlgorithmThree();
 });
 animationDelayInput.addEventListener("input", () => {

@@ -23,20 +23,15 @@
       </div>
 
       <div class="light-actions" aria-label="Light controls">
-        <button type="button" data-light-action="off">Turn all off</button>
-        <button type="button" data-light-action="on">Turn all on</button>
-        <button type="button" data-light-action="random">Random</button>
-        <button type="button" data-reset-algorithm>Reset</button>
-      </div>
-
-      <div class="algorithm-actions" aria-label="Algorithm controls">
-        <button type="button" data-algorithm="one">Simple Algorithm</button>
-        <button type="button" data-algorithm="two">Bidirectional Algorithm</button>
-        <button type="button" data-algorithm="three">Forward Scan Algorithm</button>
-        <span id="algorithm-indicator" class="algorithm-indicator" hidden>
-          <span class="loader" aria-hidden="true"></span>
-          Computing
-        </span>
+        <button class="icon-control icon-control--lights-off" type="button" data-light-action="off" aria-label="Turn all lights off">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="icon-control icon-control--lights-on" type="button" data-light-action="on" aria-label="Turn all lights on">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="icon-control icon-control--random" type="button" data-light-action="random" aria-label="Randomize lights">
+          <span aria-hidden="true"></span>
+        </button>
       </div>
     </section>
 
@@ -66,7 +61,29 @@
           <span class="arrow-icon arrow-icon--right" aria-hidden="true"></span>
         </button>
       </div>
-      <p id="summary" class="summary"></p>
+      <div class="summary-card">
+        <button class="summary-reset" type="button" data-reset-algorithm aria-label="Reset to saved state">
+          <span aria-hidden="true"></span>
+        </button>
+        <p id="summary" class="summary"></p>
+      </div>
+    </section>
+
+    <section class="algorithm-panel" aria-label="Algorithm selection">
+      <div class="algorithm-actions" aria-label="Algorithm controls">
+        <button type="button" data-algorithm="one">Simple Algorithm</button>
+        <button type="button" data-algorithm="two">Bidirectional Algorithm</button>
+        <button type="button" data-algorithm="three">Forward Scan Algorithm</button>
+        <span id="algorithm-indicator" class="algorithm-indicator" hidden>
+          <span class="loader" aria-hidden="true"></span>
+          Computing
+        </span>
+      </div>
+
+      <article id="algorithm-description" class="algorithm-description" hidden>
+        <h2></h2>
+        <p></p>
+      </article>
     </section>
   </main>
 
