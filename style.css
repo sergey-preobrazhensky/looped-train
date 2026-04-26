@@ -569,12 +569,12 @@ button:disabled {
 }
 
 .car-roof {
-  fill: rgba(47, 21, 1, 0.80);
+  fill: rgba(52, 28, 10, 0.6);
   pointer-events: none;
 }
 
 .car-segment--off + .car-roof {
-  fill: rgb(47, 21, 1);
+  fill: rgb(87, 44, 11, 0.9);
 }
 
 .visited-marker {
@@ -589,16 +589,21 @@ button:disabled {
 
 
 .car-label {
-  fill: rgba(30, 18, 4, 0.75);
+  fill: rgba(255, 248, 230, 0.92);
   font-size: 34px;
   font-weight: 800;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
+  paint-order: stroke fill;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 6px;
+  stroke-linejoin: round;
 }
 
 .car-label--off {
-  fill: rgba(174, 185, 202, 0.55);
+  fill: rgba(174, 185, 202, 0.7);
+  stroke: rgba(0, 0, 0, 0.4);
 }
 
 .person-marker {
